@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MsgReceiver": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

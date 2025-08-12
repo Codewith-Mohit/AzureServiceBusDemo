@@ -8,9 +8,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
-	  <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-	  <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.8" />
+    <Content Include="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
+
+	<ItemGroup>
+		<!-- Core library for interacting with Azure Service Bus -->
+		<PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.3" />
+
+		<!-- Packages for reading JSON configuration files -->
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+	</ItemGroup>
+
+	<!-- This ensures our config files are copied to the output directory -->
+
 
 </Project>

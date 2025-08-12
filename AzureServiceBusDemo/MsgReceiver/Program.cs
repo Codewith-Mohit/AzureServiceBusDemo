@@ -7,14 +7,45 @@ using Microsoft.Extensions.Configuration;
 
 class Program
 {
-
-
-    // The connection string and queue name are the same as the sender
-    private const string connectionString = "AZURE_SERVICEBUS_CONNECTION_STRING";
-    private const string queueName = "msg-queue";
-
     static async Task Main(string[] args)
     {
+
+        // ================================================================
+        // 1. CONFIGURATION SETUP (TOP-LEVEL STATEMENTS)
+        // ================================================================
+
+        // Get the current environment. We use "Development" for local testing 
+        // and "Production" as a fallback if the environment variable is not set.
+        // You can set this variable in Visual Studio's debug settings.
+        string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+
+        // Create a configuration builder.
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            // Add the environment-specific file. "optional: true" means it won't crash if it doesn't exist.
+            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
+            // Also add environment variables for production overrides.
+            .AddEnvironmentVariables();
+
+        IConfiguration configuration = builder.Build();
+
+        // Get the connection string and queue name from the configuration.
+        string connectionString = configuration.GetSection("AzureServiceBus:ConnectionString").Value;
+        const string queueName = "msg-queue";
+
+        Console.WriteLine($"Environment: {environment}");
+        Console.WriteLine($"Connection String from config: {connectionString}\n");
+
+        // A basic check to ensure a connection string is present.
+        if (string.IsNullOrWhiteSpace(connectionString) || connectionString.Contains("Placeholder"))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: Connection string is not configured. Please update appsettings.Development.json.");
+            Console.ResetColor();
+            return;
+        }
+
         await using var client = new ServiceBusClient(connectionString);
 
         // The ServiceBusProcessor is a convenient way to receive and process messages

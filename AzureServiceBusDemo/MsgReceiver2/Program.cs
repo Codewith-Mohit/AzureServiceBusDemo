@@ -47,44 +47,39 @@ class Program
         // The ServiceBusClient will be responsible for creating senders and receivers
         await using var client = new ServiceBusClient(connectionString);
 
-        // The ServiceBusSender is used to publish messages to a queue
-        ServiceBusSender sender = client.CreateSender(queueName);
+        // The ServiceBusProcessor is a convenient way to receive and process messages
+        // from a queue in an event-driven manner.
+        ServiceBusProcessor processor = client.CreateProcessor(queueName, new ServiceBusProcessorOptions());
 
+        // Define the handlers for received messages and for errors
+        processor.ProcessMessageAsync += MessageHandler;
+        processor.ProcessErrorAsync += ErrorHandler;
 
+        // Start processing messages
+        await processor.StartProcessingAsync();
 
-        string messageBody = "Hello, Azure Service Bus!";
-
-        try
-        {
-            // Create a ServiceBusMessage object with the message body
-            var message = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageBody));
-
-            for (int i = 0; i < 50000; i++)
-            {
-                // Add a custom application property to the message
-                message.ApplicationProperties["MessageNumber"] = i;
-                message.ApplicationProperties["Sender"] = "MsgSender";
-                await sender.SendMessageAsync(message);
-                Console.WriteLine($"Sent message: {i + ":" +messageBody}");
-
-           /* Task.Delay(10).Wait(); */// Simulate some delay between messages
-            }
-
-            // Send the message to the queue
-            
-            Console.WriteLine($"Sent message: {messageBody}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An exception occurred: {ex.Message}");
-        }
-        finally
-        {
-            // Clean up the sender
-            await sender.DisposeAsync();
-        }
-
-        Console.WriteLine("Press any key to exit.");
+        Console.WriteLine("Waiting for messages...");
+        Console.WriteLine("Press any key to stop the processor and exit.");
         Console.ReadKey();
+
+        // Stop processing messages
+        await processor.StopProcessingAsync();
+    }
+
+    static async Task MessageHandler(ProcessMessageEventArgs args)
+    {
+        string body = args.Message.Body.ToString();
+        string mNumber = args.Message.ApplicationProperties.TryGetValue("MessageNumber", out var value) ? value.ToString() : "Unknown";
+        Console.WriteLine($"Received: {mNumber}");
+
+        // "Complete" the message to remove it from the queue.
+        // If this is not called, the message will be "abandoned" and reappear after a timeout.
+        await args.CompleteMessageAsync(args.Message);
+    }
+
+    static Task ErrorHandler(ProcessErrorEventArgs args)
+    {
+        Console.WriteLine($"An error occurred: {args.Exception.Message}");
+        return Task.CompletedTask;
     }
 }
